@@ -68,6 +68,34 @@ public class Program : IVRCClientEventHandler
             appManager.VRChatOscClient.OnVRChatOSCMessageReceived += ConsoleLogger.OnOSCMessageReceived;
             appManager.VRChatOscClient.OnVRChatOSCMessageSent += ConsoleLogger.OnOSCMessageSent;
 
+            // Parse CLI flags (OSC and Module logs are OFF by default; enable via flags)
+            if (args.Any(a => string.Equals(a, "--log-osc", StringComparison.OrdinalIgnoreCase) || string.Equals(a, "--osc-logs", StringComparison.OrdinalIgnoreCase) || string.Equals(a, "--osc", StringComparison.OrdinalIgnoreCase) || string.Equals(a, "--osc=true", StringComparison.OrdinalIgnoreCase)))
+            {
+                ConsoleLogger.ShowOscLogs = true;
+            }
+
+            if (args.Any(a => string.Equals(a, "--log-module-debug", StringComparison.OrdinalIgnoreCase) || string.Equals(a, "--module-debug", StringComparison.OrdinalIgnoreCase) || string.Equals(a, "--module-logs", StringComparison.OrdinalIgnoreCase) || string.Equals(a, "--module-debug=true", StringComparison.OrdinalIgnoreCase)))
+            {
+                ConsoleLogger.ShowModuleDebugLogs = true;
+            }
+
+            if (args.Any(a => string.Equals(a, "--log-terminal", StringComparison.OrdinalIgnoreCase) || string.Equals(a, "--terminal-logs", StringComparison.OrdinalIgnoreCase) || string.Equals(a, "--terminal", StringComparison.OrdinalIgnoreCase) || string.Equals(a, "--log-terminal=true", StringComparison.OrdinalIgnoreCase)))
+            {
+                ConsoleLogger.ShowTerminalLogs = true;
+            }
+
+            foreach (var arg in args)
+            {
+                if (arg.StartsWith("--log-level=", StringComparison.OrdinalIgnoreCase) || arg.StartsWith("--min-level=", StringComparison.OrdinalIgnoreCase))
+                {
+                    var val = arg.Split('=')[1];
+                    if (Enum.TryParse<LogLevel>(val, true, out var level))
+                    {
+                        ConsoleLogger.MinLogLevel = level;
+                    }
+                }
+            }
+
             // 4. Engine Connection Mode Startup
             var shouldForceStart = args.Any(a =>
                 string.Equals(a, "--start", StringComparison.OrdinalIgnoreCase) ||

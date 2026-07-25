@@ -1,4 +1,4 @@
-﻿// Copyright (c) VolcanicArts. Licensed under the GPL-3.0 License.
+// Copyright (c) VolcanicArts. Licensed under the GPL-3.0 License.
 // See the LICENSE file in the repository root for full license text.
 
 using System;
@@ -51,7 +51,7 @@ public abstract class Serialiser<TReference, TSerialisable> : ISerialiser where 
         {
             lock (serialisationLock)
             {
-                var data = performDeserialisation<SerialisableVersion>(filePath);
+                var data = performDeserialisation<SerialisableVersion>(filePath, log: false);
 
                 if (data is null)
                 {
@@ -114,7 +114,7 @@ public abstract class Serialiser<TReference, TSerialisable> : ISerialiser where 
         }
     }
 
-    private T? performDeserialisation<T>(string filePath) where T : class
+    private T? performDeserialisation<T>(string filePath, bool log = true) where T : class
     {
         try
         {
@@ -123,7 +123,7 @@ public abstract class Serialiser<TReference, TSerialisable> : ISerialiser where 
             if (bytes is [0xFF, 0xFE, ..])
             {
                 bytes = bytes[2..];
-                Logger.Log("Found BOM. Deserialising as UTF16");
+                if (log) Logger.Log("Found BOM. Deserialising as UTF16");
                 return JsonConvert.DeserializeObject<T>(Encoding.Unicode.GetString(bytes));
             }
 
@@ -132,13 +132,13 @@ public abstract class Serialiser<TReference, TSerialisable> : ISerialiser where 
 
             if (utf16Str.StartsWith('{'))
             {
-                Logger.Log($"Deserialising {filePath} as UTF16", LoggingTarget.Information);
+                if (log) Logger.Log($"Deserialising {filePath} as UTF16", LoggingTarget.Information);
                 return JsonConvert.DeserializeObject<T>(utf16Str);
             }
 
             if (utf8Str.StartsWith('{'))
             {
-                Logger.Log($"Deserialising {filePath} as UTF8", LoggingTarget.Information);
+                if (log) Logger.Log($"Deserialising {filePath} as UTF8", LoggingTarget.Information);
                 return JsonConvert.DeserializeObject<T>(utf8Str);
             }
 

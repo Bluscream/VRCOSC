@@ -22,7 +22,9 @@ internal static class ConsoleLogger
     private static readonly StringBuilder inputBuffer = new();
 
     public static LogLevel MinLogLevel { get; set; } = LogLevel.Verbose;
-    public static bool ShowOscLogs { get; set; } = true;
+    public static bool ShowOscLogs { get; set; } = false;
+    public static bool ShowModuleDebugLogs { get; set; } = false;
+    public static bool ShowTerminalLogs { get; set; } = false;
 
     public static StringBuilder InputBuffer => inputBuffer;
 
@@ -80,6 +82,18 @@ internal static class ConsoleLogger
     {
         if (entry.Level < MinLogLevel) return;
 
+        var isTerminalTarget = entry.Target == LoggingTarget.Terminal;
+        if (isTerminalTarget && !ShowTerminalLogs) return;
+
+        var isModuleDebugFile = string.Equals(entry.LoggerName, "module-debug", StringComparison.OrdinalIgnoreCase);
+
+        // module-debug file log duplicates are suppressed unless ShowModuleDebugLogs is explicitly enabled
+        if (isModuleDebugFile && !ShowModuleDebugLogs) return;
+
+        var isModuleLog = isTerminalTarget
+                       || isModuleDebugFile
+                       || (entry.LoggerName is not null && entry.LoggerName.Contains("module", StringComparison.OrdinalIgnoreCase));
+
         var color = entry.Level switch
         {
             LogLevel.Error => ConsoleColor.Red,
@@ -89,7 +103,7 @@ internal static class ConsoleLogger
             _ => ConsoleColor.Gray
         };
 
-        var label = entry.LoggerName?.ToUpperInvariant() ?? entry.Level.ToString().ToUpperInvariant();
+        var label = entry.Target?.ToString().ToUpperInvariant() ?? entry.LoggerName?.ToUpperInvariant() ?? entry.Level.ToString().ToUpperInvariant();
         var msg = entry.Message ?? string.Empty;
         if (entry.Exception is not null)
         {

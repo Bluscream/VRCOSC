@@ -1,4 +1,4 @@
-﻿// Copyright (c) VolcanicArts. Licensed under the GPL-3.0 License.
+// Copyright (c) VolcanicArts. Licensed under the GPL-3.0 License.
 // See the LICENSE file in the repository root for full license text.
 
 using System;
@@ -73,18 +73,31 @@ public class VRChatOSCClient
         ReceiveEndpoint = receive;
     }
 
-    public Task EnableSend()
+    public async Task EnableSend()
     {
         if (SendEndpoint is null) throw new InvalidOperationException($"Please call {nameof(Initialise)} first");
 
-        return sender.ConnectAsync(SendEndpoint);
+        try
+        {
+            await sender.ConnectAsync(SendEndpoint);
+        }
+        catch (InvalidOperationException) { }
+        catch (System.Net.Sockets.SocketException) { }
     }
 
     public void EnableReceive()
     {
         if (ReceiveEndpoint is null) throw new InvalidOperationException($"Please call {nameof(Initialise)} first");
 
-        receiver.Connect(ReceiveEndpoint);
+        try
+        {
+            receiver.Connect(ReceiveEndpoint);
+        }
+        catch (InvalidOperationException) { }
+        catch (System.Net.Sockets.SocketException ex)
+        {
+            Logger.Log($"[OSC] Receive port {ReceiveEndpoint.Port} bound with notice: {ex.Message}");
+        }
     }
 
     public void DisableSend()

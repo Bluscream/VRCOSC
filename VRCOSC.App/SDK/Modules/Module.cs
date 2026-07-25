@@ -878,6 +878,8 @@ public abstract class Module
         AppManager.GetInstance().SendToAllParameter(name, value);
     }
 
+    protected void SendParameter(string name, object value) => SendParameter<object>(name, value);
+
     /// <summary>
     /// Allows you to send any parameter name and value, but wait for VRChat to acknowledge it
     /// </summary>

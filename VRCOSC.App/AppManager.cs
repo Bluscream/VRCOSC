@@ -425,6 +425,10 @@ internal class AppManager : IVRCClientEventHandler
     public async Task ForceStart()
     {
         Logger.Log("Force starting");
+        if (State.Value is AppManagerState.Starting or AppManagerState.Started or AppManagerState.Waiting)
+        {
+            await StopAsync();
+        }
         CancelStartRequest();
         await ConnectionManager.Stop();
         initialiseOSCClient(IPAddress.Loopback, 9000, IPAddress.Loopback, 9001);
@@ -433,7 +437,7 @@ internal class AppManager : IVRCClientEventHandler
 
     public void CancelStartRequest()
     {
-        requestStartCancellationSource.Cancel();
+        requestStartCancellationSource?.Cancel();
         State.Value = AppManagerState.Stopped;
     }
 
@@ -571,22 +575,31 @@ internal class AppManager : IVRCClientEventHandler
 
     private async Task startAsync()
     {
-        if (SettingsManager.GetInstance().GetValue<bool>(VRCOSCSetting.SpeechEnabled))
+        try
         {
-            if (SettingsManager.GetInstance().GetValue<SpeechModel>(VRCOSCSetting.SpeechModel) == SpeechModel.Custom && string.IsNullOrWhiteSpace(SettingsManager.GetInstance().GetValue<string>(VRCOSCSetting.SpeechModelPath)))
+            if (SettingsManager.GetInstance().GetValue<bool>(VRCOSCSetting.SpeechEnabled))
             {
-                var result = MessageBox.Show("You have enabled the speech engine with no model installed.\nWould you like to automatically set it up?", "Set Up Speech Engine?", MessageBoxButton.YesNo);
+                if (SettingsManager.GetInstance().GetValue<SpeechModel>(VRCOSCSetting.SpeechModel) == SpeechModel.Custom && string.IsNullOrWhiteSpace(SettingsManager.GetInstance().GetValue<string>(VRCOSCSetting.SpeechModelPath)))
+                {
+                    if (Application.Current is not null)
+                    {
+                        var result = MessageBox.Show("You have enabled the speech engine with no model installed.\nWould you like to automatically set it up?", "Set Up Speech Engine?", MessageBoxButton.YesNo);
 
-                if (result == MessageBoxResult.Yes)
-                {
-                    await InstallSpeechModel(SpeechModel.Small);
-                }
-                else
-                {
-                    SettingsManager.GetInstance().GetObservable<bool>(VRCOSCSetting.SpeechEnabled).Value = false;
+                        if (result == MessageBoxResult.Yes)
+                        {
+                            await InstallSpeechModel(SpeechModel.Small);
+                        }
+                        else
+                        {
+                            SettingsManager.GetInstance().GetObservable<bool>(VRCOSCSetting.SpeechEnabled).Value = false;
+                        }
+                    }
+                    else
+                    {
+                        SettingsManager.GetInstance().GetObservable<bool>(VRCOSCSetting.SpeechEnabled).Value = false;
+                    }
                 }
             }
-        }
 
         if (SettingsManager.GetInstance().GetValue<bool>(VRCOSCSetting.SpeechEnabled))
         {
@@ -623,6 +636,11 @@ internal class AppManager : IVRCClientEventHandler
         sendMetadataParameters();
         sendControlParameters();
     }
+    catch (Exception ex)
+    {
+        Logger.Error(ex, "Error occurred during startAsync");
+    }
+}
 
     public Task InstallSpeechModel(SpeechModel model)
     {
@@ -687,6 +705,7 @@ internal class AppManager : IVRCClientEventHandler
     {
         if (State.Value is AppManagerState.Stopping or AppManagerState.Stopped) return;
 
+        CancelStartRequest();
         State.Value = AppManagerState.Stopping;
 
         if (GlobalKeyboardHook.IsEnabled)

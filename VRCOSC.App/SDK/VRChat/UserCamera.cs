@@ -1,4 +1,4 @@
-﻿// Copyright (c) VolcanicArts. Licensed under the GPL-3.0 License.
+// Copyright (c) VolcanicArts. Licensed under the GPL-3.0 License.
 // See the LICENSE file in the repository root for full license text.
 
 using System;
@@ -242,9 +242,9 @@ public class UserCamera
     private async Task<T> retrieveValue<T>(VRChatCameraInput input)
     {
         var address = await oscClient.RequestNode(inputToAddress(input));
-        if (address is null) return default!;
+        if (address?.Value is null || address.Value.Length == 0) return default!;
 
-        var value = address.Value![0];
+        var value = address.Value[0];
         if (value is double dValue) value = (float)dValue;
         if (value is long lValue) value = (int)lValue;
 
@@ -273,22 +273,22 @@ public class UserCamera
     private async Task<float> retrieveZoom()
     {
         var address = await oscClient.RequestNode(inputToAddress(VRChatCameraInput.Zoom));
-        if (address is null) return 0f;
+        if (address?.Value is null || address.Value.Length == 0) return 0f;
 
-        var value = address.Value![0];
+        var value = address.Value[0];
         return value is "NaN" ? 0.15f : Interpolation.Map((double)value, 0d, 100d, 0f, 1f);
     }
 
     private async Task<ColorHSL> retrieveGreenScreenBackground()
     {
         var hueAddress = await oscClient.RequestNode(inputToAddress(VRChatCameraInput.Hue));
-        var hue = (hueAddress is null ? 0 : (float)(double)hueAddress.Value![0]) / 360f;
+        var hue = (hueAddress?.Value is null || hueAddress.Value.Length == 0 ? 0 : (float)(double)hueAddress.Value[0]) / 360f;
 
         var saturationAddress = await oscClient.RequestNode(inputToAddress(VRChatCameraInput.Saturation));
-        var saturation = saturationAddress is null ? 0f : Interpolation.Map((double)saturationAddress.Value![0], 0d, 100d, 0f, 1f);
+        var saturation = saturationAddress?.Value is null || saturationAddress.Value.Length == 0 ? 0f : Interpolation.Map((double)saturationAddress.Value[0], 0d, 100d, 0f, 1f);
 
         var lightnessAddress = await oscClient.RequestNode(inputToAddress(VRChatCameraInput.Lightness));
-        var lightness = lightnessAddress is null ? 0f : Interpolation.Map((double)lightnessAddress.Value![0], 0d, 100d, 0f, 1f);
+        var lightness = lightnessAddress?.Value is null || lightnessAddress.Value.Length == 0 ? 0f : Interpolation.Map((double)lightnessAddress.Value[0], 0d, 100d, 0f, 1f);
 
         return new ColorHSL(hue, saturation, lightness);
     }
@@ -296,7 +296,7 @@ public class UserCamera
     private async Task retrievePose()
     {
         var address = await oscClient.RequestNode(inputToAddress(VRChatCameraInput.Pose));
-        if (address is null) return;
+        if (address?.Value is null || address.Value.Length < 6) return;
 
         var values = ((JArray)address.Value![0]).ToObject<double[]>()!;
         Transform = new Transform(new Vector3((float)values[0], (float)values[1], (float)values[2]), new Vector3((float)values[3], (float)values[4], (float)values[5]).ToQuaternion());
