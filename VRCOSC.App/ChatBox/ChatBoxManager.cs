@@ -181,11 +181,10 @@ public class ChatBoxManager : INotifyPropertyChanged
                 }
                 else
                 {
-                    Logger.Log("ChatBox could not validate all data");
-                    ExceptionHandler.Handle("ChatBox could not load all data.\nThis is usually the fault of a module not loading correctly or a missing config.\nPlease make sure all your modules are up-to-date and have correct configs.");
+                    Logger.Log("ChatBox validation failed for one or more clip references. Force-loading clips to preserve timeline configuration.");
+                    Deserialise(filePathOverride, true);
+                    return;
                 }
-
-                return;
             }
         }
 

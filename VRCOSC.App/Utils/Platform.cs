@@ -23,15 +23,17 @@ public static class Platform
     {
         try
         {
-            var downloads = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
+            var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            var downloads = !string.IsNullOrEmpty(userProfile) ? Path.Combine(userProfile, "Downloads") : string.Empty;
 
             var dialog = new OpenFileDialog
             {
                 Filter = filter,
-                InitialDirectory = downloads
+                InitialDirectory = Directory.Exists(downloads) ? downloads : string.Empty
             };
 
-            var result = dialog.ShowDialog(Application.Current.MainWindow);
+            var owner = Application.Current?.MainWindow;
+            var result = owner is not null ? dialog.ShowDialog(owner) : dialog.ShowDialog();
             if (!result.HasValue) throw new InvalidOperationException("Unable to open file picker");
 
             return result.Value ? dialog.FileName : null;

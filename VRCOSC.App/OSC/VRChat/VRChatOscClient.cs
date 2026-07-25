@@ -61,6 +61,10 @@ public class VRChatOSCClient
         {
             // Ignore send attempts if OSC sender is not connected
         }
+        catch (System.Net.Sockets.SocketException)
+        {
+            // Ignore send attempts if target OSC endpoint is unreachable
+        }
     }
 
     public void Initialise(IPEndPoint send, IPEndPoint receive)
