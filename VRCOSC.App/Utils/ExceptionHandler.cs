@@ -51,24 +51,38 @@ public static class ExceptionHandler
             proxyException = proxyException.InnerException;
         }
 
-        isWindowShowing = true;
-
-        var result = MessageBox.Show(sb.ToString(), $"VRCOSC has experienced a {(isCritical ? "critical" : "non-critical")} exception", MessageBoxButton.OKCancel, isCritical ? MessageBoxImage.Error : MessageBoxImage.Warning);
-
-        if (result == MessageBoxResult.OK)
+        if (Application.Current is not null)
         {
-            VRCOSCLinks.DISCORD_INVITE.OpenExternally();
+            isWindowShowing = true;
+
+            var result = MessageBox.Show(sb.ToString(), $"VRCOSC has experienced a {(isCritical ? "critical" : "non-critical")} exception", MessageBoxButton.OKCancel, isCritical ? MessageBoxImage.Error : MessageBoxImage.Warning);
+
+            if (result == MessageBoxResult.OK)
+            {
+                VRCOSCLinks.DISCORD_INVITE.OpenExternally();
+            }
+
+            isWindowShowing = false;
+
+            if (isCritical) Application.Current.Shutdown(-1);
         }
-
-        isWindowShowing = false;
-
-        if (isCritical && Application.Current is not null) Application.Current.Shutdown(-1);
+        else
+        {
+            Logger.Error(e, $"[CRITICAL ERROR] {message}");
+        }
     }
 
     public static void Handle(string message)
     {
-        isWindowShowing = true;
-        MessageBox.Show(message, "VRCOSC has experienced an error", MessageBoxButton.OK, MessageBoxImage.Error);
-        isWindowShowing = false;
+        if (Application.Current is not null)
+        {
+            isWindowShowing = true;
+            MessageBox.Show(message, "VRCOSC has experienced an error", MessageBoxButton.OK, MessageBoxImage.Error);
+            isWindowShowing = false;
+        }
+        else
+        {
+            Logger.Error(new Exception(message), message);
+        }
     }
 }

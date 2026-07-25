@@ -92,7 +92,9 @@ public abstract class Node : GraphElement, INode
     /// Processes this node from inputs to outputs
     /// </summary>
     /// <param name="c">The context a flow is running in</param>
-    protected abstract Task Process(IPulseContext c);
+    protected virtual Task Process(IPulseContext c) => Process();
+
+    protected virtual Task Process() => Task.CompletedTask;
 
     /// <summary>
     /// Whether this <see cref="Node"/> should process or not

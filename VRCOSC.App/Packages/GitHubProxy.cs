@@ -10,8 +10,15 @@ public static class GitHubProxy
     private const string client_id = "70c1b7af05288131463c";
     private const string client_secret = "";
 
-    public static GitHubClient Client = new(new ProductHeaderValue("VRCOSC"))
+    public static readonly GitHubClient Client = createClient();
+
+    private static GitHubClient createClient()
     {
-        Credentials = new Credentials(client_id, client_secret, AuthenticationType.Basic)
-    };
+        var client = new GitHubClient(new ProductHeaderValue("VRCOSC"));
+        if (!string.IsNullOrEmpty(client_secret))
+        {
+            client.Credentials = new Credentials(client_id, client_secret, AuthenticationType.Basic);
+        }
+        return client;
+    }
 }
