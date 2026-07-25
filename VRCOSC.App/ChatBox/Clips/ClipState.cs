@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
+using System.Windows;
 using Newtonsoft.Json;
 using VRCOSC.App.ChatBox.Clips.Variables;
 using VRCOSC.App.Modules;
@@ -54,20 +55,16 @@ public class ClipState : ClipElement
         {
             if (IsBuiltIn) return true;
 
+            if (Application.Current?.MainWindow is not MainWindow mw || mw.ChatBoxView?.SelectedClip is not { } selectedClip) return true;
+
             if (SettingsManager.GetInstance().GetValue<bool>(VRCOSCSetting.FilterByEnabledModules))
             {
-                var selectedClip = MainWindow.GetInstance().ChatBoxView.SelectedClip;
-                Debug.Assert(selectedClip is not null);
-
                 var enabledModuleIDs = ModuleManager.GetInstance().GetEnabledModuleIDs().Where(moduleID => selectedClip.LinkedModules.Contains(moduleID)).OrderBy(moduleID => moduleID);
                 var clipStateModuleIDs = States.Select(pair => pair.Key).OrderBy(s => s);
                 return enabledModuleIDs.SequenceEqual(clipStateModuleIDs);
             }
             else
             {
-                var selectedClip = MainWindow.GetInstance().ChatBoxView.SelectedClip;
-                Debug.Assert(selectedClip is not null);
-
                 var enabledModuleIDs = ModuleManager.GetInstance().Modules.Values.SelectMany(moduleList => moduleList).Where(module => selectedClip.LinkedModules.Contains(module.FullID)).Select(module => module.FullID).OrderBy(moduleID => moduleID);
                 var clipStateModuleIDs = States.Select(pair => pair.Key).OrderBy(s => s);
                 return enabledModuleIDs.SequenceEqual(clipStateModuleIDs);

@@ -447,7 +447,11 @@ internal class AppManager : IVRCClientEventHandler
         {
             if (!IsAdministrator)
             {
-                MessageBox.Show($"An OSC connection mode of {ConnectionMode.Custom} requires VRCOSC to be ran as administrator. Please restart the app as administrator", "Permission Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
+                var msg = $"An OSC connection mode of {ConnectionMode.Custom} requires VRCOSC to be ran as administrator. Please restart the app as administrator";
+                if (Application.Current is not null)
+                    MessageBox.Show(msg, "Permission Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
+                else
+                    Logger.Error(new Exception(msg), "Permission Warning");
                 return;
             }
 
@@ -470,7 +474,11 @@ internal class AppManager : IVRCClientEventHandler
         {
             if (!IsAdministrator)
             {
-                MessageBox.Show($"An OSC connection mode of {ConnectionMode.LAN} requires VRCOSC to be ran as administrator. Please restart the app as administrator", "Permission Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
+                var msg = $"An OSC connection mode of {ConnectionMode.LAN} requires VRCOSC to be ran as administrator. Please restart the app as administrator";
+                if (Application.Current is not null)
+                    MessageBox.Show(msg, "Permission Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
+                else
+                    Logger.Error(new Exception(msg), "Permission Warning");
                 return;
             }
 
@@ -616,21 +624,32 @@ internal class AppManager : IVRCClientEventHandler
         sendControlParameters();
     }
 
-    public Task InstallSpeechModel(SpeechModel model) => Application.Current.Dispatcher.Invoke(() =>
+    public Task InstallSpeechModel(SpeechModel model)
     {
-        var modelName = model switch
+        Func<Task> execute = () =>
         {
-            SpeechModel.Tiny => "ggml-tiny.bin",
-            SpeechModel.Small => "ggml-small.bin",
-            _ => throw new ArgumentOutOfRangeException(nameof(model), model, null)
+            var modelName = model switch
+            {
+                SpeechModel.Tiny => "ggml-tiny.bin",
+                SpeechModel.Small => "ggml-small.bin",
+                _ => throw new ArgumentOutOfRangeException(nameof(model), model, null)
+            };
+
+            var action = new FileDownloadAction(new Uri($"https://huggingface.co/ggerganov/whisper.cpp/resolve/main/{modelName}?download=true"), Storage.GetStorageForDirectory("runtime/whisper"), modelName);
+
+            action.OnComplete += () => SettingsManager.GetInstance().GetObservable<SpeechModel>(VRCOSCSetting.SpeechModel).Value = model;
+
+            if (Application.Current?.MainWindow is MainWindow mw)
+                return mw.ShowLoadingOverlay(action);
+
+            return action.Execute();
         };
 
-        var action = new FileDownloadAction(new Uri($"https://huggingface.co/ggerganov/whisper.cpp/resolve/main/{modelName}?download=true"), Storage.GetStorageForDirectory("runtime/whisper"), modelName);
+        if (Application.Current?.Dispatcher is not null)
+            return Application.Current.Dispatcher.Invoke(execute);
 
-        action.OnComplete += () => SettingsManager.GetInstance().GetObservable<SpeechModel>(VRCOSCSetting.SpeechModel).Value = model;
-
-        return MainWindow.GetInstance().ShowLoadingOverlay(action);
-    });
+        return execute();
+    }
 
     private void initialiseOSCClient(IPAddress sendAddress, int sendPort, IPAddress receiveAddress, int receivePort)
     {
@@ -704,47 +723,58 @@ internal class AppManager : IVRCClientEventHandler
 
     #region Profiles
 
-    public void ChangeProfile(Profile newProfile) => Application.Current.Dispatcher.Invoke(async () =>
+    public void ChangeProfile(Profile newProfile)
     {
-        var currentProfile = ProfileManager.GetInstance().ActiveProfile.Value;
-        if (currentProfile == newProfile) return;
-
-        Debug.Assert(currentProfile is not null);
-        Debug.Assert(newProfile is not null);
-
-        Logger.Log($"Changing profile from {currentProfile.Name.Value} ({currentProfile.ID}) to {newProfile.Name.Value} ({newProfile.ID})");
-
-        foreach (var window in Application.Current.Windows.OfType<Window>().Where(w => w != Application.Current.MainWindow))
+        async Task execute()
         {
-            window.Close();
+            var currentProfile = ProfileManager.GetInstance().ActiveProfile.Value;
+            if (currentProfile == newProfile) return;
+
+            Debug.Assert(currentProfile is not null);
+            Debug.Assert(newProfile is not null);
+
+            Logger.Log($"Changing profile from {currentProfile.Name.Value} ({currentProfile.ID}) to {newProfile.Name.Value} ({newProfile.ID})");
+
+            if (Application.Current?.Windows is not null)
+            {
+                foreach (var window in Application.Current.Windows.OfType<Window>().Where(w => w != Application.Current.MainWindow))
+                {
+                    window.Close();
+                }
+            }
+
+            var beforeState = State.Value;
+
+            if (State.Value == AppManagerState.Started)
+            {
+                await StopAsync();
+            }
+
+            NodeManager.GetInstance().Unload();
+            ChatBoxManager.GetInstance().Unload();
+            ModuleManager.GetInstance().UnloadAllModules();
+            DollyManager.GetInstance().Unload();
+
+            ProfileManager.GetInstance().ActiveProfile.Value = newProfile;
+
+            DollyManager.GetInstance().Load();
+            ModuleManager.GetInstance().LoadAllModules();
+            ChatBoxManager.GetInstance().Load();
+            NodeManager.GetInstance().Load();
+            RouterManager.GetInstance().Load();
+
+            if (beforeState == AppManagerState.Started)
+            {
+                await Task.Delay(100);
+                await startAsync();
+            }
         }
 
-        var beforeState = State.Value;
-
-        if (State.Value == AppManagerState.Started)
-        {
-            await StopAsync();
-        }
-
-        NodeManager.GetInstance().Unload();
-        ChatBoxManager.GetInstance().Unload();
-        ModuleManager.GetInstance().UnloadAllModules();
-        DollyManager.GetInstance().Unload();
-
-        ProfileManager.GetInstance().ActiveProfile.Value = newProfile;
-
-        DollyManager.GetInstance().Load();
-        ModuleManager.GetInstance().LoadAllModules();
-        ChatBoxManager.GetInstance().Load();
-        NodeManager.GetInstance().Load();
-        RouterManager.GetInstance().Load();
-
-        if (beforeState == AppManagerState.Started)
-        {
-            await Task.Delay(100);
-            await startAsync();
-        }
-    });
+        if (Application.Current?.Dispatcher is not null)
+            Application.Current.Dispatcher.Invoke(execute);
+        else
+            execute().GetAwaiter().GetResult();
+    }
 
     #endregion
 }

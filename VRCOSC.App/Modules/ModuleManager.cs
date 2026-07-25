@@ -316,7 +316,7 @@ internal class ModuleManager : INotifyPropertyChanged
 
         foreach (var moduleDirectory in Directory.GetDirectories(remoteModulesDirectory))
         {
-            var packageId = moduleDirectory.Split('\\').Last();
+            var packageId = Path.GetFileName(moduleDirectory);
 
             PackageLoadContext packageLoadContext;
 

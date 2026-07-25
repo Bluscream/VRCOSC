@@ -55,7 +55,11 @@ public class PackageManager
         serialisationManager = new SerialisationManager();
         serialisationManager.RegisterSerialiser(1, new PackageManagerSerialiser(baseStorage, this));
 
-        SettingsManager.GetInstance().GetObservable<bool>(VRCOSCSetting.AllowPreReleasePackages).Subscribe(() => MainWindow.GetInstance().PackagesView.Refresh());
+        SettingsManager.GetInstance().GetObservable<bool>(VRCOSCSetting.AllowPreReleasePackages).Subscribe(() =>
+        {
+            if (Application.Current?.MainWindow is MainWindow mw)
+                mw.PackagesView.Refresh();
+        });
     }
 
     public async Task Load()
@@ -102,7 +106,7 @@ public class PackageManager
     {
         if (!packageSource.IsAvailable()) return false;
 
-        if (closeWindows)
+        if (closeWindows && Application.Current?.Windows is not null)
         {
             foreach (var window in Application.Current.Windows.OfType<Window>().Where(w => w != Application.Current.MainWindow))
             {
@@ -125,7 +129,8 @@ public class PackageManager
         {
             serialisationManager.Serialise();
             await ModuleManager.GetInstance().ReloadAllModules();
-            MainWindow.GetInstance().PackagesView.Refresh();
+            if (Application.Current?.MainWindow is MainWindow mw)
+                mw.PackagesView.Refresh();
         }
 
         return true;
@@ -159,9 +164,12 @@ public class PackageManager
 
     public async Task UninstallPackage(PackageSource packageSource)
     {
-        foreach (var window in Application.Current.Windows.OfType<Window>().Where(w => w != Application.Current.MainWindow))
+        if (Application.Current?.Windows is not null)
         {
-            window.Close();
+            foreach (var window in Application.Current.Windows.OfType<Window>().Where(w => w != Application.Current.MainWindow))
+            {
+                window.Close();
+            }
         }
 
         Logger.Log($"Uninstalling {packageSource.InternalReference}");
@@ -171,7 +179,8 @@ public class PackageManager
         InstalledPackages.Remove(packageSource.PackageID!);
         serialisationManager.Serialise();
         await ModuleManager.GetInstance().ReloadAllModules();
-        MainWindow.GetInstance().PackagesView.Refresh();
+        if (Application.Current?.MainWindow is MainWindow mw)
+            mw.PackagesView.Refresh();
     }
 
     public bool IsInstalled(PackageSource packageSource) => packageSource.PackageID is not null && InstalledPackages.ContainsKey(packageSource.PackageID);

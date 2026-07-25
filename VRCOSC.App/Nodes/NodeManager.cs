@@ -266,7 +266,10 @@ public class NodeManager
     {
         if (!Loaded.Value) return;
 
-        await updateTokenSource!.CancelAsync();
+        if (updateTokenSource is not null)
+        {
+            await updateTokenSource.CancelAsync();
+        }
         updateThread = null;
 
         foreach (var graphId in runningGraphs)
