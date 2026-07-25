@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net10.0-windows10.0.26100.0</TargetFramework>
+        <WindowsSdkPackageVersion>10.0.26100.56</WindowsSdkPackageVersion>
+        <Nullable>enable</Nullable>
+        <UseWPF>true</UseWPF>
+        <Company>VRCOSC</Company>
+        <Product>VRCOSC.CLI</Product>
+        <LangVersion>latestmajor</LangVersion>
+        <AssemblyName>VRCOSC.CLI</AssemblyName>
+        <AssemblyVersion>$(GlobalVersion)</AssemblyVersion>
+        <FileVersion>$(GlobalVersion)</FileVersion>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\VRCOSC.App\VRCOSC.App.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Spectre.Console" Version="0.57.2" />
+      <PackageReference Include="Spectre.Console.Cli" Version="0.55.0" />
+    </ItemGroup>
+
+</Project>
