@@ -22,12 +22,16 @@ public class NodeAttribute : Attribute
     public string Title { get; }
     public string Path { get; }
 
-    public NodeAttribute(string title, string path = "")
+    public NodeAttribute(string title) : this(title, string.Empty)
+    {
+    }
+
+    public NodeAttribute(string title, string path)
     {
         if (string.IsNullOrWhiteSpace(title)) throw new Exception("A title must be provided for a node");
 
         Title = title;
-        Path = path;
+        Path = path ?? string.Empty;
     }
 }
 
@@ -35,6 +39,25 @@ public class NodeAttribute : Attribute
 public class NodeGenerics(params Type[] types) : Attribute
 {
     public Type[] Types { get; } = types;
+}
+
+[Obsolete("Use NodeGenerics attribute instead")]
+[AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
+public class NodeGenericTypeFilterAttribute : Attribute
+{
+    public int TypeIndex { get; }
+    public Type[] AllowedTypes { get; }
+
+    public NodeGenericTypeFilterAttribute(int typeIndex, params Type[] allowedTypes)
+    {
+        TypeIndex = typeIndex;
+        AllowedTypes = allowedTypes ?? Array.Empty<Type>();
+    }
+
+    public NodeGenericTypeFilterAttribute()
+    {
+        AllowedTypes = Array.Empty<Type>();
+    }
 }
 
 [AttributeUsage(AttributeTargets.Property)]
@@ -71,11 +94,27 @@ public class InputMode(InputModes modes) : Attribute
 
 public interface INodeElement
 {
-    Node Owner { get; set; }
-    string Name { get; }
-    INodeElementMetadata Metadata { get; internal set; }
-    bool IsConnected { get; internal set; }
-    Action? OnIsConnectedChanged { get; set; }
+    Node Owner
+    {
+        get => null!;
+        set { }
+    }
+    string Name => string.Empty;
+    INodeElementMetadata Metadata
+    {
+        get => null!;
+        set { }
+    }
+    bool IsConnected
+    {
+        get => false;
+        set { }
+    }
+    Action? OnIsConnectedChanged
+    {
+        get => null;
+        set { }
+    }
 }
 
 public interface IFlowElement : INodeElement;
@@ -88,7 +127,7 @@ public interface IFlowInputList : IFlowInputBase;
 
 public interface IFlowOutputBase : IFlowElement
 {
-    bool Scope { get; }
+    bool Scope => false;
 }
 
 public interface IFlowOutput : IFlowOutputBase;
@@ -177,6 +216,12 @@ public class FlowInput(string name = "") : FlowElement(name), IFlowInput
     public bool IsSource(IPulseContext c) => c.IsSource(this);
 }
 
+[Obsolete("Use FlowInput instead")]
+public class FlowCall : FlowInput
+{
+    public FlowCall(string name = "") : base(name) { }
+}
+
 public class FlowInputList(string name = "") : FlowElement(name), IFlowInputList
 {
     public int Count => Metadata.Size;
@@ -189,6 +234,12 @@ public class FlowOutput(string name = "", bool scope = false) : FlowElement(name
     public bool Scope { get; } = scope;
 
     public Task Execute(IPulseContext c) => c.Execute(this);
+}
+
+[Obsolete("Use FlowOutput instead")]
+public class FlowContinuation : FlowOutput
+{
+    public FlowContinuation(string name = "", bool scope = false) : base(name, scope) { }
 }
 
 public class FlowOutputList(string name = "", bool scope = false) : FlowElement(name), IFlowOutputList
@@ -275,13 +326,17 @@ public interface IImpulseSender : IImpulseNode;
 
 public interface IImpulseReceiver : IImpulseNode
 {
-    public bool CanReceive(string name, IPulseContext c);
-    public void WriteOutputs(object[] values, IPulseContext c);
+    public bool CanReceive(string name, IPulseContext c) => false;
+    public void WriteOutputs(object[] values, IPulseContext c) { }
 }
 
 public interface IHasVariableReference
 {
-    public Guid VariableId { get; set; }
+    public Guid VariableId
+    {
+        get => Guid.Empty;
+        set { }
+    }
 }
 
 public record ImpulseDefinition(string Name, object[] Values);
@@ -295,7 +350,7 @@ internal interface IDisplayNode
 
 public interface IModuleNodeEventHandler
 {
-    public Task Write(object[] args, IPulseContext c);
+    public Task Write(object[] args, IPulseContext c) => Task.CompletedTask;
 }
 
 /// <summary>
@@ -303,8 +358,8 @@ public interface IModuleNodeEventHandler
 /// </summary>
 public interface IUpdateNode
 {
-    int UpdateOffset { get; }
-    void OnUpdate(IPulseContext c);
+    int UpdateOffset => 0;
+    void OnUpdate(IPulseContext c) { }
 }
 
 /// <summary>
@@ -313,8 +368,8 @@ public interface IUpdateNode
 /// </summary>
 public interface IActiveUpdateNode
 {
-    int UpdateOffset { get; }
-    Task<bool> OnUpdate(IPulseContext c);
+    int UpdateOffset => 0;
+    Task<bool> OnUpdate(IPulseContext c) => Task.FromResult(false);
 }
 
 /// <summary>
@@ -322,5 +377,14 @@ public interface IActiveUpdateNode
 /// </summary>
 public interface IContinuousNode
 {
-    int UpdateOffset { get; }
+    int UpdateOffset => 0;
+}
+
+public interface IHasTextProperty
+{
+    string Text
+    {
+        get => string.Empty;
+        set { }
+    }
 }
