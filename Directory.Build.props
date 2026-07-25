@@ -4,5 +4,6 @@
         <GlobalVersionMonthDay>$([System.DateTime]::Now.ToString("Mdd"))</GlobalVersionMonthDay>
         <GlobalBuild>0</GlobalBuild>
         <GlobalVersion>$(GlobalVersionYear).$(GlobalVersionMonthDay).$(GlobalBuild).0</GlobalVersion>
+        <EnableWindowsTargeting>true</EnableWindowsTargeting>
     </PropertyGroup>
 </Project>

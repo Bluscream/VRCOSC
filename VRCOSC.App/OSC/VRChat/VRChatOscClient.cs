@@ -51,9 +51,20 @@ public class VRChatOSCClient
 
     public void Send(string address, params object?[] values)
     {
-        var message = new OSCMessage(address, values);
-        sender.Send(message);
-        OnVRChatOSCMessageSent?.Invoke(new VRChatOSCMessage(message));
+        try
+        {
+            var message = new OSCMessage(address, values);
+            sender.Send(message);
+            OnVRChatOSCMessageSent?.Invoke(new VRChatOSCMessage(message));
+        }
+        catch (InvalidOperationException)
+        {
+            // Ignore send attempts if OSC sender is not connected
+        }
+        catch (System.Net.Sockets.SocketException)
+        {
+            // Ignore send attempts if target OSC endpoint is unreachable
+        }
     }
 
     public void Initialise(IPEndPoint send, IPEndPoint receive)
@@ -76,8 +87,15 @@ public class VRChatOSCClient
         receiver.Connect(ReceiveEndpoint);
     }
 
-    public void DisableSend() => sender.Disconnect();
-    public Task DisableReceive() => receiver.DisconnectAsync();
+    public void DisableSend()
+    {
+        try { sender.Disconnect(); } catch { }
+    }
+
+    public async Task DisableReceive()
+    {
+        try { await receiver.DisconnectAsync(); } catch { }
+    }
 
     public void Init(ConnectionManager connectionManager)
     {

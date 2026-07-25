@@ -6,6 +6,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Windows;
 using VRCOSC.App.Profiles.Serialisation;
 using VRCOSC.App.Serialisation;
 using VRCOSC.App.Settings;
@@ -59,7 +60,7 @@ public class ProfileManager : INotifyPropertyChanged
 
         serialisationManager.Deserialise(false);
 
-        var launchOptionProfileId = MainWindow.GetInstance().LaunchOptions?.Profile;
+        var launchOptionProfileId = Application.Current is not null ? MainWindow.GetInstance().LaunchOptions?.Profile : null;
 
         if (!string.IsNullOrWhiteSpace(launchOptionProfileId))
         {

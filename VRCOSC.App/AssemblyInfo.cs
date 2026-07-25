@@ -1,7 +1,8 @@
-// Copyright (c) VolcanicArts. Licensed under the GPL-3.0 License.
-// See the LICENSE file in the repository root for full license text.
-
+using System.Runtime.CompilerServices;
 using System.Windows;
+
+[assembly: InternalsVisibleTo("VRCOSC")]
+[assembly: InternalsVisibleTo("VRCOSC.CLI")]
 
 [assembly: ThemeInfo(
     ResourceDictionaryLocation.None, //where theme specific resource dictionaries are located

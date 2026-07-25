@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
+using System.Windows;
 using Newtonsoft.Json;
 using VRCOSC.App.ChatBox.Clips.Variables;
 using VRCOSC.App.Modules;
@@ -47,19 +48,15 @@ public class ClipEvent : ClipElement
     {
         get
         {
+            if (Application.Current?.MainWindow is not MainWindow mw || mw.ChatBoxView?.SelectedClip is not { } selectedClip) return true;
+
             if (SettingsManager.GetInstance().GetValue<bool>(VRCOSCSetting.FilterByEnabledModules))
             {
-                var selectedClip = MainWindow.GetInstance().ChatBoxView.SelectedClip;
-                Debug.Assert(selectedClip is not null);
-
                 var enabledModuleIDs = ModuleManager.GetInstance().GetEnabledModuleIDs().Where(moduleID => selectedClip.LinkedModules.Contains(moduleID)).OrderBy(moduleID => moduleID);
                 return enabledModuleIDs.Contains(ModuleID);
             }
             else
             {
-                var selectedClip = MainWindow.GetInstance().ChatBoxView.SelectedClip;
-                Debug.Assert(selectedClip is not null);
-
                 var enabledModuleIDs = ModuleManager.GetInstance().Modules.Values.SelectMany(moduleList => moduleList).Where(module => selectedClip.LinkedModules.Contains(module.FullID)).Select(module => module.FullID).OrderBy(moduleID => moduleID);
                 return enabledModuleIDs.Contains(ModuleID);
             }

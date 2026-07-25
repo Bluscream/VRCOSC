@@ -934,6 +934,11 @@ public abstract class Module
         SendParameter(moduleParameter.Name.Value, value);
     }
 
+    protected void SendParameter(Enum lookup, object value) => SendParameter<object>(lookup, value);
+
+    [Obsolete("Use GetClient().Player instead")]
+    protected Player GetPlayer() => GetClient().Player;
+
     /// <summary>
     /// Allows you to send a customisable parameter using its lookup and a value, but wait for VRChat to acknowledge it
     /// </summary>
